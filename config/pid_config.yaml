@@ -1,0 +1,33 @@
+pid_controller_node:
+  ros__parameters:
+    # This entire block is a YAML representation of your ranges
+    # The "pid_constants" key must match your code's expectation
+    pid_yaml: |
+      pid_constants:
+        "[0.0,10.0]":
+          kp: 1.0
+          ki: 0.2
+          kd: 0.1
+          kdd: 0.0
+        "(10.0,20.0)":
+          kp: 2.0
+          ki: 0.3
+          kd: 0.15
+          kdd: 0.0
+        "[20.0,30.0]":
+          kp: 3.0
+          ki: 0.5
+          kd: 0.2
+          kdd: 0.05
+
+    # If you'd prefer JSON usage, comment out 'pid_yaml' above 
+    # and define:
+    # pid_json: >
+    #   {
+    #     "pid_constants": {
+    #       "[0.0,10.0]":   { "kp": 1.0, "ki": 0.2,  "kd": 0.1,  "kdd": 0.0 },
+    #       "(10.0,20.0)":  { "kp": 2.0, "ki": 0.3,  "kd": 0.15, "kdd": 0.0 },
+    #       "[20.0,30.0]":  { "kp": 3.0, "ki": 0.5,  "kd": 0.2,  "kdd": 0.05 }
+    #     }
+    #   }
+

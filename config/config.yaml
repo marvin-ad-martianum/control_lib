@@ -1,0 +1,3 @@
+pid_controller:
+  ros__parameters:
+    pid_json_file: "/home/user/ros2_ws/src/control_lib_ros2/config/pid_config.json"

@@ -1,0 +1,153 @@
+cmake_minimum_required(VERSION 3.10)
+project(control_lib VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_package(FFTW3 REQUIRED)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(DeePCpp REQUIRED)
+# If you have Torch, do: find_package(Torch REQUIRED)
+find_package(jsoncpp REQUIRED)
+#find_package(mpc++ CONFIG REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(GTest REQUIRED) #or ament_cmake_gtest
+
+
+target_link_libraries(control_lib
+    PRIVATE
+      Eigen3::Eigen
+      DeePCpp
+      jsoncpp
+      yaml-cpp
+      FFTW3::fftw3
+      FFTW3::fftw3_threads
+      FFTW3::fftw3_omp
+)
+
+# Collect source files (example)
+file(GLOB CONTROLLERS_SOURCES
+     "${CMAKE_CURRENT_SOURCE_DIR}/controllers/*.cpp")
+file(GLOB MODELS_SOURCES
+     "${CMAKE_CURRENT_SOURCE_DIR}/models/*.cpp")
+file(GLOB DATA_SOURCES
+     "${CMAKE_CURRENT_SOURCE_DIR}/data_handling/*.cpp")
+
+
+# Create the library
+add_library(control_lib SHARED
+    ${CONTROLLERS_SOURCES}
+    ${MODELS_SOURCES}
+    ${DATA_SOURCES}
+)
+target_include_directories(control_lib
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/controllers>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/models>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/data_handling>
+      $<INSTALL_INTERFACE:include>
+)
+include_directories(
+    controllers
+    data_handling
+    models
+    library
+)
+target_link_libraries(control_lib
+    PRIVATE
+      Eigen3::Eigen
+      DeePCpp
+      # Torch::Torch
+      jsoncpp
+      yaml-cpp
+)
+
+# Just for completeness:
+target_compile_options(control_lib PRIVATE -Wall -Wextra -pedantic)
+
+# --------------------------
+#  INSTALLATION INSTRUCTIONS
+# --------------------------
+include(GNUInstallDirs)
+
+# 1) Install the library
+install(
+  TARGETS control_lib
+  EXPORT  control_libTargets
+  LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME       DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# 2) Install headers
+install(
+  DIRECTORY controllers/ models/ data_handling/ system_identification/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING PATTERN "*.h"
+)
+
+# 3) Export the targets to a file control_libTargets.cmake (to be installed)
+export(
+  EXPORT control_libTargets
+  FILE  "${CMAKE_CURRENT_BINARY_DIR}/control_libTargets.cmake"
+  NAMESPACE control_lib::
+)
+
+# 4) Install that export file into a standard cmake folder 
+#    so find_package(control_lib) can see it.
+install(
+  EXPORT control_libTargets
+  FILE control_libTargets.cmake
+  NAMESPACE control_lib::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/control_lib
+)
+
+# 5) Generate & install a simple Config file that references the targets
+include(CMakePackageConfigHelpers)
+
+# a) We write a minimal control_libConfig.cmake that includes control_libTargets.cmake
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/control_libConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/control_libConfig.cmake"
+  @ONLY
+)
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/control_libConfig.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/control_lib
+)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/control_libConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/control_libConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/control_lib
+)
+
+
+
+# --------------------------
+# AMENT EXPORTS (CRUCIAL!) for ros2
+# --------------------------
+#
+# 1) Tells ament "we have a library target" that we want to make discoverable 
+#    to other ROS 2 packages
+ament_export_targets(control_libTargets HAS_LIBRARY_TARGET)
+
+# 2) Export the library name if you want (not strictly required, but helpful)
+ament_export_libraries(control_lib)
+
+# 3) Export includes so downstream can #include "controllers/pid_controller.h"
+ament_export_include_directories(${CMAKE_INSTALL_INCLUDEDIR})
+
+# 4) Export dependencies so that downstream doesn't have to re-find them
+ament_export_dependencies(Eigen3 DeePCpp jsoncpp yaml-cpp)
+
+ament_package()
+
